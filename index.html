@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="assets/css/main.css">
+  <script src="js/script.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.9.1/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+  <link rel="icon" href="./assets/media/Keltbray-logo_single.png" type="image/x-icon">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  <!-- Include jQuery -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <!-- Include PapaParse -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+  <title>Digital Delivery Tool - ACC File Stacker</title>
+</head>
+<header>
+  <div class="header-section">
+      <img alt="" id="headerlogo" class="logo_H" src="./assets/media/Keltbray-logo_single.png">
+      <h2 class="branding">Keltbray <br>DD Hub</h2>
+  </div>
+  <div class="header-section" id="main_header">
+      <h1>Keltbray Site Sign In/Out</h1>
+  </div>
+  <div class="header-section">
+      <h3></h3>
+  </div>
+</header>
+<body>
+  <div class="form-container">
+    <input type="text" id="start-folder-url" placeholder="Upload folder ID"><br>
+    <div class="extracted-ids" id="extracted-ids">
+      ProjectId: <span id="project-id"></span><br>
+      FolderId: <span id="folder-id"></span><br>
+      Project Name: <span id="project-name"></span><br>
+      Start Folder Name: <span id="start-folder-id"></span><br><br>
+  </div>
+    <input type="file" id="csv-file" accept=".csv">
+    <button class="submitButton" id="process-btn">Process CSV</button>
+  </div>
+  <div class="form-container" id="permissions-container">
+    <h3>Files</h3>
+    <ul id="results-container"></ul>
+</div>
+
+
+  
+</body>
+<script>
+$(document).ready(function() {
+  $('#process-btn').click(function() {
+    const fileInput = document.getElementById('csv-file');
+    const file = fileInput.files[0];
+    
+    if (!file) {
+      alert('Please select a CSV file.');
+      return;
+    }
+    
+    const reader = new FileReader();
+    
+    reader.onload = function(event) {
+      const csvData = event.target.result;
+      
+      parseCSV(csvData);
+    };
+    
+    reader.readAsText(file);
+  });
+});
+// Add event listener to input field for pasting URL
+document.addEventListener('DOMContentLoaded', function() {
+const urlInput = document.getElementById('start-folder-url');
+urlInput.addEventListener('paste', (event) => {
+    const pastedText = (event.clipboardData || window.clipboardData).getData('text');
+    extractIds(pastedText);
+});
+})
+
+function parseCSV(csvData) {
+  Papa.parse(csvData, {
+    header: true,
+    complete: function(results) {
+      processData(results.data);
+    }
+  });
+}
+const resultsContainer = document.getElementById('results-container')
+    async function processData(data) {
+    // Your data processing logic goes here
+
+    console.log(data);
+    console.log('uploadFolderID:',uploadFolderID)
+
+   // Object to store distinct values based on name
+    const distinctNames = {};
+
+    // Iterate over the data array to extract distinct names
+    data.forEach(item => {
+      distinctNames[item.name] = item;
+    });
+
+    // Convert object values back to an array
+    const distinctValues = Object.values(distinctNames);
+
+    console.log(distinctValues);  
+    access_Token = await getAccessToken('data:create')
+    access_Token_write = await getAccessToken('data:write')
+    totalNumberFiles = distinctValues.length    
+    const chunkSize = Math.ceil(distinctValues.length/2);
+    console.log("chunkSize",chunkSize)
+    const chunks = splitArrayIntoChunks(distinctValues, chunkSize);
+    chunks.forEach(chunk => {
+          processChunk(chunk);
+    });
+
+
+
+        function splitArrayIntoChunks(array, chunkSize) {
+            const chunks = [];
+            for (let i = 0; i < array.length; i += chunkSize) {
+                chunks.push(array.slice(i, i + chunkSize));
+            }
+            return chunks;
+        }
+
+        // Function to run on each chunk
+        async function processChunk(chunk) {
+              // Your processing logic here
+              console.log("Processing chunk:", chunk);
+              for (let i = 0; i < chunk.length; i++) {
+      const filteredData = data.filter(function(item) {
+            return item.name === chunk[i].name;
+            });
+            filteredData.sort((b, a) => {
+            return new Date(b.last_modified_date) - new Date(a.last_modified_date);
+        })
+        try{
+          console.log(chunk[i].name,filteredData)
+        await uploadtoACC(filteredData)
+        console.log(chunk[i].name,"File Uploaded")
+        progressCount++
+        resultsContainer.innerHTML = `<h3>Progress: ${progressCount}/${totalNumberFiles}</h3>`
+        }catch{}
+
+      }
+        }
+
+
+        //const chunks = splitArrayIntoChunks(distinctValues, chunkSize);
+
+        // Run the function on each chunk
+        //chunks.forEach(chunk => {
+            //processChunk(chunk);
+        //});
+
+
+    }
+
+
+</script>
+</html>
