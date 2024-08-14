@@ -295,8 +295,8 @@ function stringToURN(str) {
 
 async function updateVersionMeta(accessToken,id,folder){
         const bodyData = [  {
-            //"id": 1165968,
-            "id":1417329,
+            "id": 1463296, // SHEAF target folder
+            //"id":1417329, // A66 target folder
             "type": "string",
             "name": "target folder",
             "value": folder

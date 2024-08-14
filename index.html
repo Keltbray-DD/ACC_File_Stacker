@@ -21,7 +21,7 @@
       <h2 class="branding">Keltbray <br>DD Hub</h2>
   </div>
   <div class="header-section" id="main_header">
-      <h1>Keltbray Site Sign In/Out</h1>
+      <h1>Keltbray File Restack tool</h1>
   </div>
   <div class="header-section">
       <h3></h3>
@@ -108,14 +108,19 @@ const resultsContainer = document.getElementById('results-container')
     access_Token = await getAccessToken('data:create')
     access_Token_write = await getAccessToken('data:write')
     totalNumberFiles = distinctValues.length    
-    const chunkSize = Math.ceil(distinctValues.length/2);
+    const chunkSize = Math.ceil(distinctValues.length/3);
     console.log("chunkSize",chunkSize)
     const chunks = splitArrayIntoChunks(distinctValues, chunkSize);
-    chunks.forEach(chunk => {
-          processChunk(chunk);
-    });
 
+    for (let i = 0; i < chunks.length; i++) {
+      await runChunks(chunks[i])
+    };
 
+        async function runChunks(chunk){
+          await processChunk(chunk);
+          await delay(10000)
+          console.log("Waiting 10 Seconds to API Limit Cooldown")
+        }
 
         function splitArrayIntoChunks(array, chunkSize) {
             const chunks = [];
@@ -127,24 +132,25 @@ const resultsContainer = document.getElementById('results-container')
 
         // Function to run on each chunk
         async function processChunk(chunk) {
-              // Your processing logic here
-              console.log("Processing chunk:", chunk);
-              for (let i = 0; i < chunk.length; i++) {
-      const filteredData = data.filter(function(item) {
-            return item.name === chunk[i].name;
-            });
+          // Your processing logic here
+          console.log("Processing chunk:", chunk);
+          for (let i = 0; i < chunk.length; i++) {
+            const filteredData = data.filter(function(item) {
+                return item.name === chunk[i].name;
+              });
             filteredData.sort((b, a) => {
-            return new Date(b.last_modified_date) - new Date(a.last_modified_date);
-        })
-        try{
-          console.log(chunk[i].name,filteredData)
-        await uploadtoACC(filteredData)
-        console.log(chunk[i].name,"File Uploaded")
-        progressCount++
-        resultsContainer.innerHTML = `<h3>Progress: ${progressCount}/${totalNumberFiles}</h3>`
-        }catch{}
+                return new Date(b.last_modified_date) - new Date(a.last_modified_date);
+              })
+            try{
+              console.log(chunk[i].name,filteredData)
+            await uploadtoACC(filteredData)
+            //await delay(1000)
+            console.log(chunk[i].name,"File Uploaded")
+            progressCount++
+            resultsContainer.innerHTML = `<h3>Progress: ${progressCount}/${totalNumberFiles}</h3>`
+            }catch{}
 
-      }
+          }
         }
 
 
@@ -157,7 +163,9 @@ const resultsContainer = document.getElementById('results-container')
 
 
     }
-
+    async function delay(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
 
 </script>
 </html>
